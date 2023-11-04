@@ -25,7 +25,7 @@ else
 fi
 
 # Set absolute paths for directories and files
-SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+SCRIPT_DIR="$( pwd -P )"
 REPO_DIR="$SCRIPT_DIR/hover_net"
 MODEL_PATH="$SCRIPT_DIR/hovernet_original_consep_notype_tf2pytorch.tar"
 IMG_DIR="$SCRIPT_DIR/imgs"
