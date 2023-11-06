@@ -68,25 +68,25 @@ def save_adj_matrix(adj_matrix, graph_name):
 
 
 def generate_graph(node_coordinates, file_name, kNN=False, draw=True):
-    node_coordinates_arr = torch.tensor(
+    node_coordinates_tensor = torch.tensor(
         list(node_coordinates.values()), dtype=torch.float32)
-    n = node_coordinates_arr.shape[0]
+    n = node_coordinates_tensor.shape[0]
 
     # Compute pairwise distances using PyTorch operations
-    x_diff = (node_coordinates_arr[:, 0].unsqueeze(
-        1) - node_coordinates_arr[:, 0])**2
-    y_diff = (node_coordinates_arr[:, 1].unsqueeze(
-        1) - node_coordinates_arr[:, 1])**2
+    x_diff = (node_coordinates_tensor[:, 0].unsqueeze(
+        1) - node_coordinates_tensor[:, 0])**2
+    y_diff = (node_coordinates_tensor[:, 1].unsqueeze(
+        1) - node_coordinates_tensor[:, 1])**2
     distances = torch.sqrt(x_diff + y_diff)
 
     # Create adjacency matrix based on the distance threshold
     adj_matrix = (distances < THRESHOLD).int()
 
-    # Consider only K nearest neighbors (or degree of a node)
+    # Keep only upper triangular part to avoid double counting
+    adj_matrix = torch.triu(adj_matrix, diagonal=1)
+
+    # Ensure the maximum degree of each node is at most 'MAX_DEGREE' (or k Nearest Neighbor)
     if kNN:
-        # Ensure the maximum degree of each node is at most 'MAX_DEGREE'
-        # Keep only upper triangular part to avoid double counting
-        adj_matrix = torch.triu(adj_matrix, diagonal=1)
         for i in range(n):
             # Sort nodes by distance and keep the closest 'MAX_DEGREE' neighbors
             sorted_neighbors = torch.argsort(distances[i])
@@ -103,4 +103,4 @@ def generate_graph(node_coordinates, file_name, kNN=False, draw=True):
 if __name__ == '__main__':
     centroids_per_file = get_centroids()
     for file_name, centroids in centroids_per_file.items():
-        generate_graph(centroids, file_name.split('.')[0])
+        generate_graph(centroids, file_name.split('.')[0], kNN=True, draw=False)
