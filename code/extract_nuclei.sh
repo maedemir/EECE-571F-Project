@@ -20,19 +20,8 @@ fi
 
 cd REPO_DIR
 
-# # Install Python dependencies
-# pip install -r "$REPO_DIR/requirements.txt"
-
-# # Quick fix: Install a specific version of docopt
-# pip install docopt==0.6.2
-# # TODO: change requirements.txt
-
-# # Install gdown
-# pip install gdown
-
 # Download a fine-tuned model using gdown
 gdown https://drive.google.com/uc?id=1BF0GIgNGYpfyqEyU0jMsA6MqcUpVQx0b
-# TODO: set a directory
 
 MODEL_PATH="$SOURCE_DIR/hovernet_original_consep_notype_tf2pytorch.tar"
 
@@ -45,8 +34,6 @@ python "$REPO_DIR/run_infer.py" \
     --input_dir="$IMG_DIR" \
     --output="$OUTPUT_DIR" 
     
-# TODO: set output path as argument
-
 # Check the return code of the Python script
 if [ $? -ne 0 ]; then
     echo "Error: The Python script encountered a problem."
@@ -54,5 +41,3 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Script execution completed successfully."
-
-# TODO: give classification output
