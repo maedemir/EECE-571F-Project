@@ -1,19 +1,13 @@
 gdown
-math
-os
-shutil
-json
 numpy
 networkx
 matplotlib
-time
 torch
 
+# libraries for hover_net
 docopt
 future
 imgaug
-matplotlib
-numpy
 opencv-python
 pandas
 pillow
