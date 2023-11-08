@@ -12,7 +12,7 @@ import torch
 JSON_DIR_PATH = '../json'
 GRAPH_OUTPUT_DIR = '../graph_adj_matrix'
 THRESHOLD = 50
-MAX_DEGREE = 10
+MAX_DEGREE = 10   # K in kNN
 
 
 def open_json(json_path):
