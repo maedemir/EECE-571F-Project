@@ -2,8 +2,8 @@
 
 # Set absolute paths for directories and files
 SOURCE_DIR="$( pwd -P )"
-IMG_DIR="$SOURCE_DIR/imgs"
-OUTPUT_DIR="$SOURCE_DIR/outputs"
+IMG_DIR="$1"
+OUTPUT_DIR="$2"
 
 # Define the repositroy link and directory where you want to clone the repository
 REPO_LINK="https://github.com/vqdang/hover_net.git"
