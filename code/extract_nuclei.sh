@@ -23,6 +23,7 @@ cd REPO_DIR
 # Download a fine-tuned model using gdown
 gdown https://drive.google.com/uc?id=1BF0GIgNGYpfyqEyU0jMsA6MqcUpVQx0b
 
+# Set Model path
 MODEL_PATH="$SOURCE_DIR/hovernet_original_consep_notype_tf2pytorch.tar"
 
 
