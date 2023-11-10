@@ -31,6 +31,7 @@ MODEL_PATH="$SOURCE_DIR/hovernet_original_consep_notype_tf2pytorch.tar"
 python "$REPO_DIR/run_infer.py" \
     --model_mode=original \
     --model_path="$MODEL_PATH" \
+    --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR" \
     --output="$OUTPUT_DIR" 
