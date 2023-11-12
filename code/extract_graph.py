@@ -9,8 +9,8 @@ import time
 import torch
 
 
-JSON_DIR_PATH = '../json'
-GRAPH_OUTPUT_DIR = '../graph_adj_matrix'
+JSON_DIR_PATH = 'data/json'
+GRAPH_OUTPUT_DIR = 'data/graph_adj_matrix'
 THRESHOLD = 50
 MAX_DEGREE = 10   # K in kNN
 
@@ -18,6 +18,22 @@ MAX_DEGREE = 10   # K in kNN
 def open_json(json_path):
     with open(json_path) as f:
         return json.load(f)
+
+
+def get_centroids():
+    centroids_per_file = {}
+    for json_file_name in os.listdir(JSON_DIR_PATH):
+        json_path = os.path.join(JSON_DIR_PATH, json_file_name)
+        json_content = open_json(json_path)
+
+        centroid_values = {}
+        for key, value in json_content.get("nuc", {}).items():
+            centroid = value.get("centroid")
+            if centroid is not None:
+                centroid_values[key] = centroid
+
+        centroids_per_file[json_file_name] = centroid_values
+    return centroids_per_file
 
 
 def draw_graph(coordinates, adj_matrix):
@@ -38,22 +54,6 @@ def draw_graph(coordinates, adj_matrix):
             node_size=1, node_color='lightblue')
     plt.axis('off')
     plt.show()
-
-
-def get_centroids():
-    centroids_per_file = {}
-    for json_file_name in os.listdir(JSON_DIR_PATH):
-        json_path = os.path.join(JSON_DIR_PATH, json_file_name)
-        json_content = open_json(json_path)
-
-        centroid_values = {}
-        for key, value in json_content.get("nuc", {}).items():
-            centroid = value.get("centroid")
-            if centroid is not None:
-                centroid_values[key] = centroid
-
-        centroids_per_file[json_file_name] = centroid_values
-    return centroids_per_file
 
 
 def save_adj_matrix(adj_matrix, graph_name):
@@ -103,4 +103,5 @@ def generate_graph(node_coordinates, file_name, kNN=False, draw=True):
 if __name__ == '__main__':
     centroids_per_file = get_centroids()
     for file_name, centroids in centroids_per_file.items():
-        generate_graph(centroids, file_name.split('.')[0], kNN=True, draw=False)
+        generate_graph(centroids, file_name.split('.')
+                       [0], kNN=True, draw=False)
