@@ -13,26 +13,32 @@ JSON_DIR_PATH = 'data/json'
 GRAPH_OUTPUT_DIR = 'data/graph_adj_matrix'
 THRESHOLD = 50
 MAX_DEGREE = 10   # K in kNN
+CLASSES = ['HP', 'NCM', 'SSL', 'TA']
 
 
 def open_json(json_path):
     with open(json_path) as f:
         return json.load(f)
 
+def get_class_name(file_name):
+    class_name = file_name.split('-')[-1].split('_')[0]
+    return class_name
 
 def get_centroids():
     centroids_per_file = {}
-    for json_file_name in os.listdir(JSON_DIR_PATH):
-        json_path = os.path.join(JSON_DIR_PATH, json_file_name)
-        json_content = open_json(json_path)
+    for cls in CLASSES:
+        cls_json_dir_path = os.path.join(JSON_DIR_PATH, cls)
+        for json_file_name in os.listdir(cls_json_dir_path):
+            json_path = os.path.join(cls_json_dir_path, json_file_name)
+            json_content = open_json(json_path)
 
-        centroid_values = {}
-        for key, value in json_content.get("nuc", {}).items():
-            centroid = value.get("centroid")
-            if centroid is not None:
-                centroid_values[key] = centroid
+            centroid_values = {}
+            for key, value in json_content.get("nuc", {}).items():
+                centroid = value.get("centroid")
+                if centroid is not None:
+                    centroid_values[key] = centroid
 
-        centroids_per_file[json_file_name] = centroid_values
+            centroids_per_file[json_file_name] = centroid_values
     return centroids_per_file
 
 
@@ -57,12 +63,19 @@ def draw_graph(coordinates, adj_matrix):
 
 
 def save_adj_matrix(adj_matrix, graph_name):
+    class_name = get_class_name(graph_name)
+    
     # Ensure the output folder exists
     if not os.path.exists(GRAPH_OUTPUT_DIR):
         os.makedirs(GRAPH_OUTPUT_DIR)
 
+    class_path = os.path.join(GRAPH_OUTPUT_DIR, class_name)
+
+    if not os.path.exists(class_path):
+        os.makedirs(class_path)
+
     # Save the adjacency matrix as a PyTorch tensor
-    output_file = os.path.join(GRAPH_OUTPUT_DIR, graph_name + '.pt')
+    output_file = os.path.join(class_path, graph_name + '.pt')
     adj_tensor = adj_matrix.clone().detach()
     torch.save(adj_tensor, output_file)
 

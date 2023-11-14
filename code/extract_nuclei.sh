@@ -27,14 +27,45 @@ gdown https://drive.google.com/uc?id=1BF0GIgNGYpfyqEyU0jMsA6MqcUpVQx0b
 MODEL_PATH="$SOURCE_DIR/hovernet_original_consep_notype_tf2pytorch.tar"
 
 
-# Run the Python script with error handling
+## Run the Python script for each class
+# HP patches nuclei extraction
 python "$REPO_DIR/run_infer.py" \
     --model_mode=original \
     --model_path="$MODEL_PATH" \
     --batch_size=16 \
     tile \
-    --input_dir="$IMG_DIR" \
-    --output="$OUTPUT_DIR" 
+    --input_dir="$IMG_DIR/HP" \
+    --output="$OUTPUT_DIR/HP" 
+
+
+# NCM patches nuclei extraction
+python "$REPO_DIR/run_infer.py" \
+    --model_mode=original \
+    --model_path="$MODEL_PATH" \
+    --batch_size=16 \
+    tile \
+    --input_dir="$IMG_DIR/NCM" \
+    --output="$OUTPUT_DIR/NCM" 
+
+
+# SSL patches nuclei extraction
+python "$REPO_DIR/run_infer.py" \
+    --model_mode=original \
+    --model_path="$MODEL_PATH" \
+    --batch_size=16 \
+    tile \
+    --input_dir="$IMG_DIR/SSL" \
+    --output="$OUTPUT_DIR/SSL" 
+
+
+# TA patches nuclei extraction
+python "$REPO_DIR/run_infer.py" \
+    --model_mode=original \
+    --model_path="$MODEL_PATH" \
+    --batch_size=16 \
+    tile \
+    --input_dir="$IMG_DIR/TA" \
+    --output="$OUTPUT_DIR/TA" 
     
 # Check the return code of the Python script
 if [ $? -ne 0 ]; then
