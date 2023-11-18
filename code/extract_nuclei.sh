@@ -35,7 +35,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/HP" \
-    --output="$OUTPUT_DIR/HP" 
+    --output="$OUTPUT_DIR/hovernet/HP" 
 
 
 # NCM patches nuclei extraction
@@ -45,7 +45,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/NCM" \
-    --output="$OUTPUT_DIR/NCM" 
+    --output="$OUTPUT_DIR/hovernet/NCM" 
 
 
 # SSL patches nuclei extraction
@@ -55,7 +55,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/SSL" \
-    --output="$OUTPUT_DIR/SSL" 
+    --output="$OUTPUT_DIR/hovernet/SSL" 
 
 
 # TA patches nuclei extraction
@@ -65,12 +65,12 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/TA" \
-    --output="$OUTPUT_DIR/TA" 
+    --output="$OUTPUT_DIR/hovernet/TA" 
     
 # Check the return code of the Python script
 if [ $? -ne 0 ]; then
-    echo "Error: The Python script encountered a problem."
+    echo "Error: The Python script for HoverNet encountered a problem."
     exit 1
 fi
 
-echo "Script execution completed successfully."
+echo "HoverNet excution completed successfully."
