@@ -7,6 +7,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import time
 import torch
+from tqdm import tqdm
 
 
 JSON_DIR_PATH = 'data/json'
@@ -20,14 +21,16 @@ def open_json(json_path):
     with open(json_path) as f:
         return json.load(f)
 
+
 def get_class_name(file_name):
     class_name = file_name.split('-')[-1].split('_')[0]
     return class_name
 
+
 def get_centroids():
     centroids_per_file = {}
     for cls in CLASSES:
-        cls_json_dir_path = os.path.join(JSON_DIR_PATH, cls)
+        cls_json_dir_path = os.path.join(JSON_DIR_PATH, cls, 'json')
         for json_file_name in os.listdir(cls_json_dir_path):
             json_path = os.path.join(cls_json_dir_path, json_file_name)
             json_content = open_json(json_path)
@@ -64,7 +67,7 @@ def draw_graph(coordinates, adj_matrix):
 
 def save_adj_matrix(adj_matrix, graph_name):
     class_name = get_class_name(graph_name)
-    
+
     # Ensure the output folder exists
     if not os.path.exists(GRAPH_OUTPUT_DIR):
         os.makedirs(GRAPH_OUTPUT_DIR)
@@ -100,7 +103,7 @@ def generate_graph(node_coordinates, file_name, kNN=False, draw=True):
 
     # Ensure the maximum degree of each node is at most 'MAX_DEGREE' (or k Nearest Neighbor)
     if kNN:
-        for i in range(n):
+        for i in tqdm(range(n), desc='kNN Process for patch: ' + str(file_name)):
             # Sort nodes by distance and keep the closest 'MAX_DEGREE' neighbors
             sorted_neighbors = torch.argsort(distances[i])
             for j in range(MAX_DEGREE, n):
