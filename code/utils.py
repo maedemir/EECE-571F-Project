@@ -9,14 +9,15 @@ from tqdm import tqdm
 import PIL.Image as Image
 
 
-BATCH_SIZE = 32
-DIMENSION = 64
+BATCH_SIZE = 64
+DIMENSION = 384
 
 
 class InferenceDataset(Dataset):
     def __init__(self, path, image_size, image_format='png'):
         self.path = path
-        self.paths = list(Path(self.path).glob("*." + image_format))
+        # self.paths = list(Path(self.path).glob("*." + image_format))
+        self.paths = list(Path(self.path).glob("*/*/*." + image_format))
         self.paths.sort()
         self.transform = self.get_transform(image_size)
         self.image_size = image_size[0]
@@ -33,7 +34,8 @@ class InferenceDataset(Dataset):
         image = self.load_image(image_path)
         image = self.transform(image)
 
-        return image
+        patch_name = '-'.join(image_path.split('/')[-1].split('-')[:-1])
+        return image, patch_name
 
     @staticmethod
     def get_transform(crop_size=(32, 32)):
@@ -59,9 +61,10 @@ def get_activation(name):
         activation[name] = output.detach()
     return hook
 
-
-def extract_features(dataloader, n, model_name='resnet18', use_mps=True):
+# vit Small: vit_small_patch16_224
+def extract_features(dataloader, n, model_name='vit_small_patch16_224', use_mps=True):
     vectors = torch.zeros(n, DIMENSION)
+    patch_names = []
 
     # Load pre-trained model
     model = timm.create_model(model_name, pretrained=True)
@@ -74,30 +77,31 @@ def extract_features(dataloader, n, model_name='resnet18', use_mps=True):
     # Set the model to evaluation mode
     model.eval()
 
-    # model.global_pool.register_forward_hook(get_activation('global_pool'))
-    # avg_pool = nn.AvgPool1d(8)
-
-    # for i, tensors in enumerate(tqdm(dataloader)):
-    #     tensors = tensors.to(mps_device)
-    #     features = model(tensors)
-    #     global_pool_output = activation['global_pool']
-    #     features = avg_pool(global_pool_output)
-    #     vectors[i*BATCH_SIZE: (i+1)*BATCH_SIZE, :] = features
-
-    model.fc = nn.Linear(512, DIMENSION)
+    #### ViT Small
     model = model.to(device)
-
-    
-    for i, tensors in enumerate(tqdm(dataloader)):
+    model.norm.register_forward_hook(get_activation('norm'))
+    for i, (tensors, patch_name_tensor) in enumerate(tqdm(dataloader)):
         tensors = tensors.to(device)
         with torch.no_grad():
-            features = model(tensors)
-        print(features)
+            model(tensors)
+            features = activation['norm'][:, -1, :]
         vectors[i*BATCH_SIZE: (i+1)*BATCH_SIZE, :] = features.squeeze().cpu()
-
+        patch_names += patch_name_tensor
+        
     
+    # #### ResNet18
+    # model.fc = nn.Linear(512, DIMENSION)
+    # model = model.to(device)
+    
+    # for i, (tensors, patch_name_tensor) in enumerate(tqdm(dataloader)):
+    #     tensors = tensors.to(device)
+    #     with torch.no_grad():
+    #         features = model(tensors)
+    #     vectors[i*BATCH_SIZE: (i+1)*BATCH_SIZE, :] = features.squeeze().cpu()
+    #     patch_names += patch_name_tensor
+
+
 
     # Convert the features to a vector representation
-    vector_representation = vectors.squeeze().cpu().numpy()
 
-    return vector_representation
+    return vectors.numpy(), patch_names
