@@ -9,7 +9,7 @@ OUTPUT_DIR="$3"
 # Start running cell extraction code
 python "code/extract_cells.py" \
     --image_dir = "$IMG_DIR" \
-    --json_dir = "data/hovernet_output" \
-    --cell_image_patches_dir = "data/extracted_cells"
+    --json_dir = "$HOVERNET_OUTPUT_DIR" \
+    --cell_image_patches_dir = "$OUTPUT_DIR"
     
 
