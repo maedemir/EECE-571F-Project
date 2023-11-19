@@ -15,7 +15,7 @@ from utils import *
 # torch.manual_seed(0)
 
 
-JSON_DIR_PATH = 'data/json'
+JSON_DIR_PATH = 'data/hovernet_output'
 GRAPH_OUTPUT_DIR = 'data/graph_adj_matrix'
 FEATURES_OUTPUT_DIR = 'data/nuclei_features'
 IMAGE_PATH = 'data/imgs'
@@ -43,6 +43,8 @@ def init_directories():
 
 
 if __name__ == '__main__':
+    os.makedirs(FEATURES_OUTPUT_DIR, exist_ok=True)
+    
     dataset = InferenceDataset(
         path=CELL_IMAGE_PATCHES_DIR, image_size=(224, 224))
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=1,
