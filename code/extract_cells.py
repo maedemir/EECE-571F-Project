@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument("--cell_image_patches_dir", default='data/extracted_cells')
     parser.add_argument("--json_dir", default='data/imgs')
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
     os.makedirs(args.cell_image_patches_dir, exist_ok=True)
 
