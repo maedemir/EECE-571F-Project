@@ -35,7 +35,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/HP" \
-    --output="$OUTPUT_DIR/hovernet/HP" 
+    --output="$OUTPUT_DIR/hovernet_output/HP" 
 
 
 # NCM patches nuclei extraction
@@ -45,7 +45,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/NCM" \
-    --output="$OUTPUT_DIR/hovernet/NCM" 
+    --output="$OUTPUT_DIR/hovernet_output/NCM" 
 
 
 # SSL patches nuclei extraction
@@ -55,7 +55,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/SSL" \
-    --output="$OUTPUT_DIR/hovernet/SSL" 
+    --output="$OUTPUT_DIR/hovernet_output/SSL" 
 
 
 # TA patches nuclei extraction
@@ -65,7 +65,7 @@ python "$REPO_DIR/run_infer.py" \
     --batch_size=16 \
     tile \
     --input_dir="$IMG_DIR/TA" \
-    --output="$OUTPUT_DIR/hovernet/TA" 
+    --output="$OUTPUT_DIR/hovernet_output/TA" 
     
 # Check the return code of the Python script
 if [ $? -ne 0 ]; then
