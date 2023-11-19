@@ -15,7 +15,7 @@ def open_json(json_path):
 def get_bboxes(args):
     bbox_per_file = {}
     for cls in CLASSES:
-        cls_json_dir_path = os.path.join(args.JSON_DIR_PATH, cls, 'json')
+        cls_json_dir_path = os.path.join(args.json_dir, cls, 'json')
         for json_file_name in os.listdir(cls_json_dir_path):
             json_path = os.path.join(cls_json_dir_path, json_file_name)
             json_content = open_json(json_path)
