@@ -1,13 +1,10 @@
 import os
 import json
+import argparse
 import PIL.Image as Image
 
 
-IMAGE_PATH = 'data/imgs'
-CELL_IMAGE_PATCHES_DIR = 'data/extracted_cells'
-FEATURES_OUTPUT_DIR = 'data/nuclei_features'
 CLASSES = ['HP', 'NCM', 'SSL', 'TA']
-JSON_DIR_PATH = 'data/json'
 
 
 def open_json(json_path):
@@ -15,10 +12,10 @@ def open_json(json_path):
         return json.load(f)
 
 
-def get_bboxes():
+def get_bboxes(args):
     bbox_per_file = {}
     for cls in CLASSES:
-        cls_json_dir_path = os.path.join(JSON_DIR_PATH, cls, 'json')
+        cls_json_dir_path = os.path.join(args.JSON_DIR_PATH, cls, 'json')
         for json_file_name in os.listdir(cls_json_dir_path):
             json_path = os.path.join(cls_json_dir_path, json_file_name)
             json_content = open_json(json_path)
@@ -38,11 +35,11 @@ def get_class_name(file_name):
     return class_name
 
 
-def extract_cells(bboxes, image_name, image_class):
-    output_path = os.path.join(CELL_IMAGE_PATCHES_DIR, image_class, image_name)
+def extract_cells(args, bboxes, image_name, image_class):
+    output_path = os.path.join(args.cell_image_patches_dir, image_class, image_name)
     os.makedirs(output_path, exist_ok=True)
 
-    image_path = os.path.join(IMAGE_PATH, image_class, image_name)
+    image_path = os.path.join(args.image_dir, image_class, image_name)
     img = Image.open(image_path + '.png')
 
     for node_name, ((x1, y1), (x2, y2)) in bboxes.items():
@@ -56,12 +53,20 @@ def extract_cells(bboxes, image_name, image_class):
 
 
 if __name__ == '__main__':
-    os.makedirs(CELL_IMAGE_PATCHES_DIR, exist_ok=True)
-    os.makedirs(FEATURES_OUTPUT_DIR, exist_ok=True)
+    parser = argparse.ArgumentParser(
+        description="Extract cells based on hovernet json outputs.")
 
-    bboxes_per_file = get_bboxes()
+    parser.add_argument("--image_dir", default='data/imgs')
+    parser.add_argument("--cell_image_patches_dir", default='data/extracted_cells')
+    parser.add_argument("--json_dir", default='data/imgs')
+
+    args = parser.parse_args()
+
+    os.makedirs(args.cell_image_patches_dir, exist_ok=True)
+
+    bboxes_per_file = get_bboxes(args)
     for file_name, bboxes in bboxes_per_file.items():
         image_name = file_name.split('/')[-1].split('.')[0]
         image_class = get_class_name(image_name)
-        extract_cells(bboxes=bboxes, image_name=image_name,
+        extract_cells(args, bboxes=bboxes, image_name=image_name,
                       image_class=image_class)
