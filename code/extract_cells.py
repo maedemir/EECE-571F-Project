@@ -46,8 +46,8 @@ def extract_cells(args, bboxes, image_name, image_class):
         patch = img.crop((y1, x1, y2, x2))
 
         # Save the patch to the output folder
-        patch_path = os.path.join(
-            output_path, f'{image_name}-patch_{node_name.zfill(4)}.png')
+        print(os.path.join(output_path, f'{image_name}-patch_{node_name.zfill(4)}.png'))
+        patch_path = os.path.join(output_path, f'{image_name}-patch_{node_name.zfill(4)}.png')
         patch.save(patch_path)
 
 
