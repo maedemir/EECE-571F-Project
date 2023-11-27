@@ -63,9 +63,11 @@ if __name__ == '__main__':
 
     os.makedirs(args.cell_image_patches_dir, exist_ok=True)
 
+    image_class = args.cell_image_patches_dir.split('/')[-2]
+
     bboxes_per_file = get_bboxes(args)
     for file_name, bboxes in bboxes_per_file.items():
         image_name = file_name.split('/')[-1].split('.')[0]
-        image_class = get_class_name(image_name)
+        # image_class = get_class_name(image_name)
         extract_cells(args, bboxes=bboxes, image_name=image_name,
                       image_class=image_class)
