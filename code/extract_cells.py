@@ -14,19 +14,18 @@ def open_json(json_path):
 
 def get_bboxes(args):
     bbox_per_file = {}
-    for cls in CLASSES:
-        cls_json_dir_path = os.path.join(args.json_dir, cls, 'json')
-        for json_file_name in os.listdir(cls_json_dir_path):
-            json_path = os.path.join(cls_json_dir_path, json_file_name)
-            json_content = open_json(json_path)
+    cls_json_dir_path = args.json_dir
+    for json_file_name in os.listdir(cls_json_dir_path):
+        json_path = os.path.join(cls_json_dir_path, json_file_name)
+        json_content = open_json(json_path)
 
-            bbox_values = {}
-            for key, value in json_content.get("nuc", {}).items():
-                bbox = value.get("bbox")
-                if bbox is not None:
-                    bbox_values[key] = bbox
+        bbox_values = {}
+        for key, value in json_content.get("nuc", {}).items():
+            bbox = value.get("bbox")
+            if bbox is not None:
+                bbox_values[key] = bbox
 
-            bbox_per_file[json_file_name] = bbox_values
+        bbox_per_file[json_file_name] = bbox_values
     return bbox_per_file
 
 
@@ -56,9 +55,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Extract cells based on hovernet json outputs.")
 
-    parser.add_argument("--image_dir", default='data/imgs')
-    parser.add_argument("--cell_image_patches_dir", default='data/extracted_cells')
-    parser.add_argument("--json_dir", default='data/imgs')
+    parser.add_argument("--image_dir", default='')
+    parser.add_argument("--cell_image_patches_dir", default='')
+    parser.add_argument("--json_dir", default='')
 
     args, unknown = parser.parse_known_args()
 
