@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name extract_cell_HP
+#SBATCH --job-name extract_cell_TA
 #SBATCH --mail-type=END,FAIL # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=maeede.mir@gmail.com # Where to send mail
 #SBATCH --cpus-per-task 20
@@ -17,9 +17,9 @@ SOURCE_DIR="$( pwd -P )"
 source /projects/ovcare/classification/Maedeh/py3env/bin/activate
 
 # Start running cell extraction code
-for i in {001..050}; do
+for i in {001..063}; do
     python "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/code/extract_cells.py" \
-        --image_dir "/projects/ovcare/classification/Ali/Heram/Dataset/Polyp_dataset/random_patches_10_20_40/Mix/HP/HP-$i/1000/20/" \
-        --json_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output/HP/HP-$i/json" \
-        --cell_image_patches_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_extracted_cells/HP/HP-$i"
+        --image_dir "/projects/ovcare/classification/Ali/Heram/Dataset/Polyp_dataset/random_patches_10_20_40/Mix/TA/TA-$i/1000/20/" \
+        --json_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output/TA/TA-$i/json" \
+        --cell_image_patches_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_extracted_cells/TA/TA-$i"
 done
