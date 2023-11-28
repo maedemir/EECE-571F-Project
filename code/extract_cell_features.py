@@ -1,13 +1,10 @@
-import numpy as np
 import os
-import shutil
-import json
-import PIL.Image as Image
 import matplotlib.pyplot as plt
 import torch
 from sklearn.decomposition import PCA
 from torch.utils.data import DataLoader
 from collections import defaultdict
+import argparse
 
 from utils import *
 
@@ -15,38 +12,29 @@ from utils import *
 # torch.manual_seed(0)
 
 
-JSON_DIR_PATH = 'data/hovernet_output'
-GRAPH_OUTPUT_DIR = 'data/graph_adj_matrix'
-FEATURES_OUTPUT_DIR = 'data/nuclei_features'
-IMAGE_PATH = 'data/imgs'
-CELL_IMAGE_PATCHES_DIR = 'data/extracted_cells'
-CLASSES = ['HP', 'NCM', 'SSL', 'TA']
-ENABLE_PCA = False
+ENABLE_PCA = True
 
 
-def get_class_name(file_name):
-    class_name = file_name.split('-')[-1].split('_')[0]
-    return class_name
-
-
-def init_directories():
-    for class_name in CLASSES:
-        os.path.join(CELL_IMAGE_PATCHES_DIR, class_name)
-
-        # Create a folder for each class in nuclei features directory
-        os.makedirs(os.path.join(FEATURES_OUTPUT_DIR,
-                    class_name), exist_ok=True)
-
-        patch_features_dir = os.path.join(
-            FEATURES_OUTPUT_DIR, class_name, 'raw')
-        os.makedirs(patch_features_dir, exist_ok=True)
-
+def init_directories(args, class_name):
+    # Create a folder for each class in nuclei features directory
+    os.makedirs(args.features_output_dir, exist_ok=True)
+    os.makedirs(os.path.join(args.features_output_dir, 'raw'), exist_ok=True)
+    
 
 if __name__ == '__main__':
-    os.makedirs(FEATURES_OUTPUT_DIR, exist_ok=True)
+    parser = argparse.ArgumentParser(
+        description="Extract features of each cell based on extracted cell images.")
+
+    parser.add_argument("--features_output_dir", default='')
+    parser.add_argument("--cell_image_patches_dir", default='')
+    parser.add_argument("--class_name", default="")
+
+    args, unknown = parser.parse_known_args()
     
-    dataset = InferenceDataset(
-        path=CELL_IMAGE_PATCHES_DIR, image_size=(224, 224))
+    
+    class_name = args.class_name
+
+    dataset = InferenceDataset(path=args.cell_image_patches_dir, image_size=(224, 224))
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=1,
                             pin_memory=True)
 
@@ -56,7 +44,7 @@ if __name__ == '__main__':
     for key, value in zip(patch_names, vectors):
         result_dict[key] = torch.cat([result_dict[key], torch.tensor([value])])
 
-    init_directories()
+    init_directories(args, class_name)
 
     for patch_name, features in result_dict.items():
         if ENABLE_PCA:
@@ -67,8 +55,6 @@ if __name__ == '__main__':
             plt.savefig(patch_name + '.png')
             plt.close()
 
-        class_name = get_class_name(patch_name)
-        patch_features_dir = os.path.join(
-            FEATURES_OUTPUT_DIR, class_name, 'raw')
+        patch_features_dir = os.path.join(args.features_output_dir, 'raw')
         torch.save(features, os.path.join(
             patch_features_dir, f'{patch_name}-features.pt'))
