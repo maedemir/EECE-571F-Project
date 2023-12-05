@@ -35,7 +35,7 @@ def get_class_name(file_name):
 
 
 def extract_cells(args, bboxes, image_name, image_class):
-    output_path = os.path.join(args.cell_image_patches_dir, image_class, image_name)
+    output_path = os.path.join(args.cell_image_patches_dir, image_name)
     os.makedirs(output_path, exist_ok=True)
 
     image_path = os.path.join(args.image_dir, image_class, image_name)
@@ -46,7 +46,6 @@ def extract_cells(args, bboxes, image_name, image_class):
         patch = img.crop((y1, x1, y2, x2))
 
         # Save the patch to the output folder
-        print(os.path.join(output_path, f'{image_name}-patch_{node_name.zfill(4)}.png'))
         patch_path = os.path.join(output_path, f'{image_name}-patch_{node_name.zfill(4)}.png')
         patch.save(patch_path)
 

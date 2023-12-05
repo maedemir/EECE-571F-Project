@@ -14,8 +14,8 @@ source /projects/ovcare/classification/Maedeh/py3env/bin/activate
 
 for i in {001..050}; do
     python "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/code/extract_cell_features.py" \
-        --features_output_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_cell_features/HP" \
-        --cell_image_patches_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_extracted_cells/HP/HP-$i" \
+        --features_output_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_cell_features/HP/HP-$i" \
+        --cell_image_patches_dir "/projects/ovcare/classification/Maedeh/EECE571F-project/EECE-571F-Project/output_extracted_cells/HP" \
         --class_name "HP"
 
 done

@@ -12,7 +12,7 @@ from utils import *
 # torch.manual_seed(0)
 
 
-ENABLE_PCA = True
+ENABLE_PCA = False
 
 
 def init_directories(args, class_name):
