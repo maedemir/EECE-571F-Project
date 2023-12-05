@@ -10,7 +10,7 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.loader import DataLoader
 from torch.nn import Linear
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import GCNConv, TransformerConv, SuperGATConv, GATv2Conv, SGConv
 from torch_geometric.nn import global_mean_pool
 import re
 from tqdm import tqdm
@@ -165,9 +165,12 @@ class MyOwnDataset(Dataset):
 class GCN(torch.nn.Module):
     def __init__(self, hidden_channels):
         super(GCN, self).__init__()
-        self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
+        # self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.conv1 = TransformerConv(dataset.num_node_features, hidden_channels)
+        self.conv2 = TransformerConv(hidden_channels, hidden_channels)
+        self.conv3 = TransformerConv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
 
     def forward(self, x, edge_index, batch):
@@ -186,6 +189,9 @@ class GCN(torch.nn.Module):
         x = self.lin(x)
 
         return x
+    
+    
+    
 
 
 def train(model, criterion, optimizer, train_loader):
