@@ -244,9 +244,9 @@ if __name__ == '__main__':
     print(f'Number of test graphs: {len(test_dataset)}')
 
     train_loader = DataLoader(
-        train_dataset, batch_size=2, shuffle=True, num_workers=2, pin_memory=False)
+        train_dataset, batch_size=2, shuffle=True, num_workers=1, pin_memory=False)
     test_loader = DataLoader(test_dataset, batch_size=2,
-                             shuffle=True, num_workers=2, pin_memory=False)
+                             shuffle=True, num_workers=1, pin_memory=False)
     # for step, data in enumerate(train_loader):
     #     print(f'Step {step + 1}:')
     #     print('=======')
@@ -255,7 +255,7 @@ if __name__ == '__main__':
 
     model = GCN(hidden_channels=32)
     model.to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     criterion = torch.nn.CrossEntropyLoss()
 
     for epoch in range(1, 31):
