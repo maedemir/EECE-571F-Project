@@ -170,7 +170,7 @@ class GCN(torch.nn.Module):
         # self.conv3 = GCNConv(hidden_channels, hidden_channels)
         self.conv1 = TransformerConv(dataset.num_node_features, hidden_channels)
         self.conv2 = TransformerConv(hidden_channels, hidden_channels)
-        self.conv3 = TransformerConv(hidden_channels, hidden_channels)
+        # self.conv3 = TransformerConv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
 
     def forward(self, x, edge_index, batch):
@@ -178,14 +178,14 @@ class GCN(torch.nn.Module):
         x = self.conv1(x, edge_index)
         x = x.relu()
         x = self.conv2(x, edge_index)
-        x = x.relu()
-        x = self.conv3(x, edge_index)
+        # x = x.relu()
+        # x = self.conv3(x, edge_index)
 
         # 2. Readout layer
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         # 3. Apply a final classifier
-        x = F.dropout(x, p=0.5, training=self.training)
+        x = F.dropout(x, p=0.7, training=self.training)
         x = self.lin(x)
 
         return x
@@ -244,16 +244,16 @@ if __name__ == '__main__':
     print(f'Number of test graphs: {len(test_dataset)}')
 
     train_loader = DataLoader(
-        train_dataset, batch_size=4, shuffle=True, num_workers=2, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=4,
-                             shuffle=True, num_workers=2, pin_memory=True)
+        train_dataset, batch_size=2, shuffle=True, num_workers=2, pin_memory=False)
+    test_loader = DataLoader(test_dataset, batch_size=2,
+                             shuffle=True, num_workers=2, pin_memory=False)
     # for step, data in enumerate(train_loader):
     #     print(f'Step {step + 1}:')
     #     print('=======')
     #     print(f'Number of graphs in the current batch: {data.num_graphs}')
     #     print()
 
-    model = GCN(hidden_channels=64)
+    model = GCN(hidden_channels=32)
     model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = torch.nn.CrossEntropyLoss()
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     for epoch in range(1, 31):
         print(f'Epoch: {epoch:03d}')
         train(model, criterion, optimizer, train_loader)
-        if epoch % 5 == 0:
+        if epoch % 3 == 0:
             train_acc = evaluate(model, train_loader, "train")
             test_acc = evaluate(model, test_loader, "test")
             print(
