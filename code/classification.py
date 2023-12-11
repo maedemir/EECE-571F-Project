@@ -10,10 +10,14 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.loader import DataLoader
 from torch.nn import Linear
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, TransformerConv, SuperGATConv, GATv2Conv, SGConv
+from torch_geometric.nn import GCNConv, TransformerConv, SuperGATConv, GATv2Conv, SGConv, SAGEConv
 from torch_geometric.nn import global_mean_pool
 import re
 from tqdm import tqdm
+from torch_geometric.nn import LayerNorm
+from torchmetrics.classification import Accuracy, Precision, Recall, F1Score, AUROC
+
+
 
 
 DEVICE = 'cuda'
@@ -44,9 +48,9 @@ class MyOwnDataset(Dataset):
                 paths.append(dirpath + '/' + j)
         return paths
 
-    @property
-    def size(self):
-        return 8
+    # @property
+    # def size(self):
+    #     return 8
 
     @property
     def num_node_features(self):
@@ -165,20 +169,24 @@ class MyOwnDataset(Dataset):
 class GCN(torch.nn.Module):
     def __init__(self, hidden_channels):
         super(GCN, self).__init__()
-        # self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
-        # self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.conv1 = GATv2Conv(dataset.num_node_features, hidden_channels)
+        # self.conv2 = GATv2Conv(hidden_channels, hidden_channels)
+        # self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
         # self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        self.conv1 = TransformerConv(dataset.num_node_features, hidden_channels)
-        self.conv2 = TransformerConv(hidden_channels, hidden_channels)
+        # self.conv1 = TransformerConv(dataset.num_node_features, hidden_channels)
+        # self.conv2 = TransformerConv(hidden_channels, hidden_channels)
         # self.conv3 = TransformerConv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
+        self.layer_norm = LayerNorm(hidden_channels)
 
     def forward(self, x, edge_index, batch):
         # 1. Obtain node embeddings
         x = self.conv1(x, edge_index)
-        x = x.relu()
-        x = self.conv2(x, edge_index)
         # x = x.relu()
+        # x = self.layer_norm(x)
+        # x = self.conv2(x, edge_index)
+        # x = x.relu()
+        # x = self.layer_norm(x)
         # x = self.conv3(x, edge_index)
 
         # 2. Readout layer
@@ -191,7 +199,30 @@ class GCN(torch.nn.Module):
         return x
     
     
+metrics = {}
+def create_metrics(num_classes):  
+    metrics['valid_accuracy'] = Accuracy(task="multiclass", num_classes=num_classes).to('cuda')
+    metrics['valid_average_accuracy'] = Accuracy(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
+    metrics['valid_precision'] = Precision(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
+    metrics['valid_recall'] = Recall(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
+    metrics['valid_f1'] = F1Score(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
+    # metrics['valid_auc'] = AUROC(task="multiclass", num_classes=num_classes)
     
+
+def update_metrics(true, pred):
+    for key, metric in metrics.items():
+        metric.update(pred, true)
+    
+
+def compute_metrics():
+    print('* valid accuracy =', metrics['valid_accuracy'].compute().item())
+    print('* valid average accuracy =', metrics['valid_average_accuracy'].compute().item())
+    print('* valid precision =', metrics['valid_precision'].compute().item())
+    print('* valid recall =', metrics['valid_recall'].compute().item())
+    print('* valid f1 =', metrics['valid_f1'].compute().item())
+    # print('* valid auc =', valid_auc(pred, true))
+    print('\n\n')
+
 
 
 def train(model, criterion, optimizer, train_loader):
@@ -211,15 +242,18 @@ def train(model, criterion, optimizer, train_loader):
 def evaluate(model, loader, mode='train'):
     model.eval()
 
+    create_metrics(num_classes=4)
     correct = 0
     preds = set()
     for data in loader:  # Iterate in batches over the training/test dataset.
         data = data.to(DEVICE)
         out = model(data.x, data.edge_index, data.batch)
         pred = out.argmax(dim=1)  # Use the class with highest probability.
+        update_metrics(data.y, pred)
         preds.update([int(p) for p in pred])
         # Check against ground-truth labels.
         correct += int((pred == data.y).sum())
+    compute_metrics()
 
     print("model predicted classes in %s mode:" % (mode), list(preds))
 
@@ -232,37 +266,56 @@ if __name__ == '__main__':
     dataset = MyOwnDataset(
         root=args.graph_pairs_path)
 
-    torch.manual_seed(51)
+    torch.manual_seed(0)
+    n_data = len(dataset)
     dataset = dataset.shuffle()
+    
+    test_acc_list = []
 
-    # train_dataset = dataset[0::2]
-    train_dataset = dataset[:120]
-    # test_dataset = dataset[1::2]
-    test_dataset = dataset[120:150]
 
-    print(f'Number of training graphs: {len(train_dataset)}')
-    print(f'Number of test graphs: {len(test_dataset)}')
+    # cross-validation
+    fold_size = n_data // 3
+    for fold_i in range(3):
+        print('#' * 30 + " Fold: " + str(fold_i + 1) + " " + '#' * 30)
+        
+        start_idx = fold_i * fold_size
+        end_idx = (fold_i + 1) * fold_size if fold_i < 2 else n_data
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=2, shuffle=True, num_workers=1, pin_memory=False)
-    test_loader = DataLoader(test_dataset, batch_size=2,
-                             shuffle=True, num_workers=1, pin_memory=False)
-    # for step, data in enumerate(train_loader):
-    #     print(f'Step {step + 1}:')
-    #     print('=======')
-    #     print(f'Number of graphs in the current batch: {data.num_graphs}')
-    #     print()
+        train_dataset = dataset[:start_idx] + dataset[end_idx:]
+        valid_dataset = dataset[start_idx:end_idx]
+        
+        print(f'Number of training graphs: {len(train_dataset)}')
+        print(f'Number of test graphs: {len(valid_dataset)}')
+        
+        train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=2)
+        valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=True, num_workers=2)
+        
+        
+        model = GCN(hidden_channels=64)
+        model.to(DEVICE)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+        criterion = torch.nn.CrossEntropyLoss()
 
-    model = GCN(hidden_channels=32)
-    model.to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    criterion = torch.nn.CrossEntropyLoss()
+        best_acc_valid = 0
+        best_model = None
 
-    for epoch in range(1, 31):
-        print(f'Epoch: {epoch:03d}')
-        train(model, criterion, optimizer, train_loader)
-        if epoch % 3 == 0:
-            train_acc = evaluate(model, train_loader, "train")
-            test_acc = evaluate(model, test_loader, "test")
-            print(
-                f'Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}\n################################################')
+        for epoch in range(0, 7):
+            print(f'Epoch: {epoch:03d}')
+            train(model, criterion, optimizer, train_loader)
+            if epoch % 3 == 0:
+                # train_acc = evaluate(model, train_loader, "train")
+                test_acc = evaluate(model, valid_loader, "test")
+                print('test_acc:', test_acc)
+                
+                if test_acc > best_acc_valid:
+                    best_acc_valid = test_acc
+                    best_model = model
+                    test_acc_list.append(test_acc)
+
+                
+                # print(
+                #     f'Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}\n################################################')
+    
+    print('Mean ACC on Valid =', sum(test_acc_list) / len(test_acc_list))
+
+   
