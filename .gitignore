@@ -1,5 +1,6 @@
 data/*
 .DS_Store
 code/__pycache__
+code/extract_graph_v2.py
 temp_data/*
 slide_*
