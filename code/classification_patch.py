@@ -72,6 +72,7 @@ class MyOwnDataset(Dataset):
     def processed_file_names(self):
         return [f'data_{idx}.pt' for idx in range(self.size)]
 
+    ### Comment below part if you have processed dataset
     # def process(self):
 
     #     # Create a regex pattern for files with .pt extension
@@ -149,11 +150,7 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
         self.conv1 = GATv2Conv(dataset.num_node_features, hidden_channels)
         self.conv2 = GATv2Conv(hidden_channels, hidden_channels)
-        # self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
-        # self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        # self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
-        # self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        # self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
         self.layer_norm = LayerNorm(hidden_channels)
 
@@ -171,15 +168,13 @@ class GCN(torch.nn.Module):
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         # 3. Apply a final classifier
-        x = F.dropout(x, p=0.3, training=self.training)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin(x)
 
         return x
 
 
 metrics = {}
-
-
 def create_metrics(num_classes):
     metrics['valid_accuracy'] = Accuracy(
         task="multiclass", num_classes=num_classes).to(DEVICE)
@@ -315,7 +310,7 @@ if __name__ == '__main__':
     n_data = len(dataset)
     test_acc_list = []
 
-    # cross-validation for loop
+    # Cross-validation for loop
     for fold_i in range(K_CV):
         # Split data to train and valid
         train_idx = splits[fold_i][0]
