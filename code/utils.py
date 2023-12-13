@@ -9,10 +9,56 @@ from tqdm import tqdm
 import PIL.Image as Image
 import numpy as np
 import torchvision.transforms.functional as function
+import json
+import os
 
 
 BATCH_SIZE = 128
 DIMENSION = 64
+
+
+def open_json(json_path):
+    with open(json_path) as f:
+        return json.load(f)
+    
+    
+def get_class_name(file_name):
+    class_name = file_name.split('-')[-1].split('_')[0]
+    return class_name
+
+def get_centroids(args):
+    centroids_per_file = {}
+    cls_json_dir_path = args.json_dir_path
+    for json_file_name in os.listdir(cls_json_dir_path):
+        json_path = os.path.join(cls_json_dir_path, json_file_name)
+        json_content = open_json(json_path)
+
+        centroid_values = {}
+        for key, value in json_content.get("nuc", {}).items():
+            centroid = value.get("centroid")
+            if centroid is not None:
+                centroid_values[key] = centroid
+
+        centroids_per_file[json_file_name] = centroid_values
+    return centroids_per_file
+
+
+def get_bboxes(args):
+    bbox_per_file = {}
+    cls_json_dir_path = args.json_dir
+    for json_file_name in os.listdir(cls_json_dir_path):
+        json_path = os.path.join(cls_json_dir_path, json_file_name)
+        json_content = open_json(json_path)
+
+        bbox_values = {}
+        for key, value in json_content.get("nuc", {}).items():
+            bbox = value.get("bbox")
+            if bbox is not None:
+                bbox_values[key] = bbox
+
+        bbox_per_file[json_file_name] = bbox_values
+    return bbox_per_file
+
 
 class SquarePad:
     def __call__(self, image):

@@ -3,35 +3,9 @@ import json
 import argparse
 import PIL.Image as Image
 
+from utils import get_bboxes
 
 CLASSES = ['HP', 'NCM', 'SSL', 'TA']
-
-
-def open_json(json_path):
-    with open(json_path) as f:
-        return json.load(f)
-
-
-def get_bboxes(args):
-    bbox_per_file = {}
-    cls_json_dir_path = args.json_dir
-    for json_file_name in os.listdir(cls_json_dir_path):
-        json_path = os.path.join(cls_json_dir_path, json_file_name)
-        json_content = open_json(json_path)
-
-        bbox_values = {}
-        for key, value in json_content.get("nuc", {}).items():
-            bbox = value.get("bbox")
-            if bbox is not None:
-                bbox_values[key] = bbox
-
-        bbox_per_file[json_file_name] = bbox_values
-    return bbox_per_file
-
-
-def get_class_name(file_name):
-    class_name = file_name.split('-')[-1].split('_')[0]
-    return class_name
 
 
 def extract_cells(args, bboxes, image_name, image_class):
@@ -46,7 +20,8 @@ def extract_cells(args, bboxes, image_name, image_class):
         patch = img.crop((y1, x1, y2, x2))
 
         # Save the patch to the output folder
-        patch_path = os.path.join(output_path, f'{image_name}-patch_{node_name.zfill(4)}.png')
+        patch_path = os.path.join(
+            output_path, f'{image_name}-patch_{node_name.zfill(4)}.png')
         patch.save(patch_path)
 
 

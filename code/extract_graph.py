@@ -1,13 +1,10 @@
-import math
 import os
-import shutil
-import json
-import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 import argparse
+from utils import get_centroids
 
 
 def get_parser():
@@ -21,33 +18,6 @@ def get_parser():
 
     args, unknown = parser.parse_known_args()
     return args
-
-
-def open_json(json_path):
-    with open(json_path) as f:
-        return json.load(f)
-
-
-def get_class_name(file_name):
-    class_name = file_name.split('-')[-1].split('_')[0]
-    return class_name
-
-
-def get_centroids(args):
-    centroids_per_file = {}
-    cls_json_dir_path = args.json_dir_path
-    for json_file_name in os.listdir(cls_json_dir_path):
-        json_path = os.path.join(cls_json_dir_path, json_file_name)
-        json_content = open_json(json_path)
-
-        centroid_values = {}
-        for key, value in json_content.get("nuc", {}).items():
-            centroid = value.get("centroid")
-            if centroid is not None:
-                centroid_values[key] = centroid
-
-        centroids_per_file[json_file_name] = centroid_values
-    return centroids_per_file
 
 
 def draw_graph(args, coordinates, adj_matrix):
@@ -135,7 +105,7 @@ if __name__ == '__main__':
 
     # Loads centroids from json files
     centroids_per_file = get_centroids(args)
-    
+
     # Iterate on each patch to create and save a graph
     for file_name, centroids in centroids_per_file.items():
         generate_graph(args, centroids, file_name.split('.')
