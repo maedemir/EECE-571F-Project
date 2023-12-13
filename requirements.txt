@@ -3,6 +3,8 @@ numpy
 networkx
 matplotlib
 torch
+torchvision
+torch_geometric
 
 # libraries for hover_net
 docopt
