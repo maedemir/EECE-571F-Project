@@ -12,7 +12,7 @@ import torchvision.transforms.functional as function
 
 
 BATCH_SIZE = 128
-DIMENSION = 512
+DIMENSION = 64
 
 class SquarePad:
     def __call__(self, image):
@@ -74,7 +74,7 @@ def get_activation(name):
     return hook
 
 # vit Small: vit_small_patch16_224
-def extract_features(dataloader, n, model_name='resnet18', use_mps=True):
+def extract_features(dataloader, n, model_name='resnet18', use_cuda=True):
     vectors = torch.zeros(n, DIMENSION)
     patch_names = []
 
@@ -82,9 +82,9 @@ def extract_features(dataloader, n, model_name='resnet18', use_mps=True):
     model = timm.create_model(model_name, pretrained=True)
 
     device = torch.device("cpu")
-    if use_mps:
+    if use_cuda:
         # related to mac
-        device = torch.device("mps")
+        device = torch.device("cuda")
 
     # Set the model to evaluation mode
     model.eval()
@@ -104,11 +104,13 @@ def extract_features(dataloader, n, model_name='resnet18', use_mps=True):
     #### ResNet18
     model.fc = nn.Linear(512, DIMENSION)
     model = model.to(device)
+    model.norm.register_forward_hook(get_activation('fc'))
     
     for i, (tensors, patch_name_tensor) in enumerate(tqdm(dataloader)):
         tensors = tensors.to(device)
         with torch.no_grad():
-            features = model(tensors)
+            model(tensors)
+            features = activation['fc']
         vectors[i*BATCH_SIZE: (i+1)*BATCH_SIZE, :] = features.squeeze().cpu()
         patch_names += patch_name_tensor
 
