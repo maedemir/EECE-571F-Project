@@ -8,6 +8,19 @@ from utils import get_bboxes
 CLASSES = ['HP', 'NCM', 'SSL', 'TA']
 
 
+def get_parser():
+    parser = argparse.ArgumentParser(
+        description="Extract cells based on hovernet json outputs.")
+
+    parser.add_argument("--image_dir", default='')
+    parser.add_argument("--cell_image_patches_dir", default='')
+    parser.add_argument("--json_dir", default='')
+
+    args, unknown = parser.parse_known_args()
+
+    return args
+
+
 def extract_cells(args, bboxes, image_name, image_class):
     output_path = os.path.join(args.cell_image_patches_dir, image_name)
     os.makedirs(output_path, exist_ok=True)
@@ -26,20 +39,15 @@ def extract_cells(args, bboxes, image_name, image_class):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="Extract cells based on hovernet json outputs.")
-
-    parser.add_argument("--image_dir", default='')
-    parser.add_argument("--cell_image_patches_dir", default='')
-    parser.add_argument("--json_dir", default='')
-
-    args, unknown = parser.parse_known_args()
+    args = get_parser()
 
     os.makedirs(args.cell_image_patches_dir, exist_ok=True)
-
     image_class = args.cell_image_patches_dir.split('/')[-2]
 
+    # Get bbox from hovernet outputs
     bboxes_per_file = get_bboxes(args)
+    
+    # Extract and save cell images in the defined directory
     for file_name, bboxes in bboxes_per_file.items():
         image_name = file_name.split('/')[-1].split('.')[0]
         # image_class = get_class_name(image_name)
