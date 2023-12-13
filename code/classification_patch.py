@@ -15,16 +15,17 @@ from torch_geometric.nn import global_mean_pool
 import re
 from tqdm import tqdm
 from torch_geometric.nn import LayerNorm
-from torchmetrics.classification import Accuracy, Precision, Recall, F1Score, AUROC
+from torchmetrics.classification import Accuracy, Precision, Recall, F1Score, AUROC, ConfusionMatrix
 import random
 from collections import defaultdict
 from torch.utils.data import Subset
-
-
-
+from torch_geometric.transforms import NormalizeFeatures, AddRandomMetaPaths
+from torch_geometric import transforms
 
 
 DEVICE = 'cuda'
+K_CV = 3  # K in K-fold Cross Validation
+EPOCHS = 10
 
 
 def get_args():
@@ -42,6 +43,9 @@ class MyOwnDataset(Dataset):
     def __init__(self, root, transform=None, pre_transform=None, pre_filter=None):
 
         self.classes_dict = {"HP": 0, "NCM": 1, "SSL": 2, "TA": 3}
+        transform = transforms.Compose([
+            NormalizeFeatures()
+        ])
 
         super().__init__(root, transform, pre_transform, pre_filter)
 
@@ -129,35 +133,6 @@ class MyOwnDataset(Dataset):
 
     #         temp.append(data)
 
-    #     # TODO
-
-    #     # pattern = re.compile(r'/([^/]+)/raw')
-
-    #     # idx = 0
-    #     # for raw_path in self.raw_paths:
-    #     #     adj_path = raw_path
-    #     #     print(self.raw_paths)
-    #     #     feature_path = raw_path.replace("output_graph", "output_cell_features")[
-    #     #         :-3] + '-features.pt'
-    #     #     adj = torch.load(raw_path).to_sparse(layout=torch.sparse_coo)
-    #     #     # # more efficient way to do this???????????
-    #     #     # adj = sparse.to_edge_index(adj)
-    #     #     edge_index = adj[0]  # adj.indices()
-    #     #     x = torch.Tensor(torch.load(feature_path))
-    #     #     y = self.classes_dict[pattern.search(adj_path).group(1)]
-    #     #     data = Data(x=x, edge_index=edge_index, y=y)
-
-    #     #     if self.pre_filter is not None and not self.pre_filter(data):
-    #     #         continue
-
-    #     #     if self.pre_transform is not None:
-    #     #         data = self.pre_transform(data)
-
-    #     #     torch.save(data, osp.join(self.processed_dir, f'data_{idx}.pt'))
-    #     #     idx += 1
-
-    #     # # TODO: c64reate super graphs from processed data (after finilazing folder structure)
-
     def len(self):
         return int(len(os.listdir(self.processed_dir)))
 
@@ -165,6 +140,7 @@ class MyOwnDataset(Dataset):
         file_name = os.listdir(self.processed_dir)[idx]
         slide_name = file_name.split('_')[0]
         data = torch.load(osp.join(self.processed_dir, file_name))
+        data = self.transform(data)
         return data
 
 
@@ -175,9 +151,9 @@ class GCN(torch.nn.Module):
         self.conv2 = GATv2Conv(hidden_channels, hidden_channels)
         # self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
         # self.conv3 = GCNConv(hidden_channels, hidden_channels)
-        # self.conv1 = TransformerConv(dataset.num_node_features, hidden_channels)
-        # self.conv2 = TransformerConv(hidden_channels, hidden_channels)
-        # self.conv3 = TransformerConv(hidden_channels, hidden_channels)
+        # self.conv1 = GCNConv(dataset.num_node_features, hidden_channels)
+        # self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        # self.conv3 = GCNConv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
         self.layer_norm = LayerNorm(hidden_channels)
 
@@ -187,29 +163,38 @@ class GCN(torch.nn.Module):
         x = x.relu()
         x = self.layer_norm(x)
         x = self.conv2(x, edge_index)
-        # x = x.relu()
-        # x = self.layer_norm(x)
-        # x = self.conv3(x, edge_index)
+        x = x.relu()
+        x = self.layer_norm(x)
+        x = self.conv3(x, edge_index)
 
         # 2. Readout layer
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         # 3. Apply a final classifier
-        x = F.dropout(x, p=0.4, training=self.training)
+        x = F.dropout(x, p=0.3, training=self.training)
         x = self.lin(x)
 
         return x
-    
-    
+
+
 metrics = {}
-def create_metrics(num_classes):  
-    metrics['valid_accuracy'] = Accuracy(task="multiclass", num_classes=num_classes).to('cuda')
-    metrics['valid_average_accuracy'] = Accuracy(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
-    metrics['valid_precision'] = Precision(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
-    metrics['valid_recall'] = Recall(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
-    metrics['valid_f1'] = F1Score(task="multiclass", num_classes=num_classes, average='macro').to('cuda')
+
+
+def create_metrics(num_classes):
+    metrics['valid_accuracy'] = Accuracy(
+        task="multiclass", num_classes=num_classes).to(DEVICE)
+    metrics['valid_average_accuracy'] = Accuracy(
+        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+    metrics['valid_precision'] = Precision(
+        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+    metrics['valid_recall'] = Recall(
+        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+    metrics['valid_f1'] = F1Score(
+        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+    metrics['confusion_matrix'] = ConfusionMatrix(
+        task="multiclass", num_classes=num_classes).to(DEVICE)
     metrics['valid_auc'] = AUROC(task="multiclass", num_classes=num_classes)
-    
+
 
 def update_metrics(true, pred, pred_p):
     for key, metric in metrics.items():
@@ -217,17 +202,18 @@ def update_metrics(true, pred, pred_p):
             metric.update(pred_p, true)
         else:
             metric.update(pred, true)
-    
+
 
 def compute_metrics():
     print('* valid accuracy =', metrics['valid_accuracy'].compute().item())
-    print('* valid average accuracy =', metrics['valid_average_accuracy'].compute().item())
+    print('* valid average accuracy =',
+          metrics['valid_average_accuracy'].compute().item())
     print('* valid precision =', metrics['valid_precision'].compute().item())
     print('* valid recall =', metrics['valid_recall'].compute().item())
     print('* valid f1 =', metrics['valid_f1'].compute().item())
     print('* valid auc =', metrics['valid_auc'].compute().item())
+    print('* confusion matrix =', metrics['confusion_matrix'].compute())
     print('\n\n')
-
 
 
 def train(model, criterion, optimizer, train_loader):
@@ -250,12 +236,14 @@ def evaluate(model, loader, mode='train'):
     create_metrics(num_classes=4)
     correct = 0
     preds = set()
-    for data in loader:  # Iterate in batches over the training/test dataset.
+    # Iterate in batches over the training/test dataset.
+    for data in loader:
         data = data.to(DEVICE)
         out = model(data.x, data.edge_index, data.batch)
-        pred = out.argmax(dim=1)  # Use the class with highest probability.
+        pred = out.argmax(dim=1)
         update_metrics(data.y, pred, out)
         preds.update([int(p) for p in pred])
+
         # Check against ground-truth labels.
         correct += int((pred == data.y).sum())
     compute_metrics()
@@ -267,6 +255,10 @@ def evaluate(model, loader, mode='train'):
 
 
 def prepare_splits(dataset):
+    """
+    Split patch-based graphs based on slides
+    """
+
     samples_map = defaultdict(lambda: defaultdict(list))
 
     for i, (file_name) in enumerate(os.listdir(dataset.processed_dir)):
@@ -281,33 +273,37 @@ def prepare_splits(dataset):
     for cls, slide_dict in samples_map.items():
         slide_names = list(slide_dict.keys())
         n_slides = len(slide_names)
-        fold_size = n_slides // 3
-        
-        for fold_i in range(3):
+        fold_size = n_slides // K_CV
+
+        for fold_i in range(K_CV):
             start_idx = fold_i * fold_size
             end_idx = (fold_i + 1) * fold_size if fold_i < 2 else n_slides
-            
+
             train_slides = slide_names[:start_idx] + slide_names[end_idx:]
             valid_slides = slide_names[start_idx:end_idx]
-            
+
             train_patches = [slide_dict[x] for x in train_slides]
             train_patches = sum(train_patches, [])
-            
+
             valid_patches = [slide_dict[x] for x in valid_slides]
             valid_patches = sum(valid_patches, [])
-            
+
             splits[fold_i][0] += train_patches
             splits[fold_i][1] += valid_patches
-    
+
     return splits
 
+
 if __name__ == '__main__':
+    # set manuel random seed
     random.seed(0)
     torch.manual_seed(0)
 
-
+    # Get arguments
     args = get_args()
     dataset = MyOwnDataset(root=args.graph_pairs_path)
+
+    # Generate splits based on slides and print number of samples in each split
     splits = prepare_splits(dataset)
     print("fold 1: training size =", len(splits[0][0]))
     print("fold 1: validation size =", len(splits[0][1]))
@@ -317,27 +313,29 @@ if __name__ == '__main__':
     print("fold 3: validation size =", len(splits[2][1]))
 
     n_data = len(dataset)
-    
     test_acc_list = []
 
-    # cross-validation
-    for fold_i in range(3):
+    # cross-validation for loop
+    for fold_i in range(K_CV):
+        # Split data to train and valid
         train_idx = splits[fold_i][0]
         valid_idx = splits[fold_i][1]
-        
         train_dataset = Subset(dataset, train_idx)
         valid_dataset = Subset(dataset, valid_idx)
-        
+
         print('#' * 30 + " Fold: " + str(fold_i + 1) + " " + '#' * 30)
-        
+
         print(f'Number of training graphs: {len(train_dataset)}')
         print(f'Number of test graphs: {len(valid_dataset)}')
-        
-        train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, num_workers=2)
-        valid_loader = DataLoader(valid_dataset, batch_size=256, shuffle=True, num_workers=2)
-        
-        
-        model = GCN(hidden_channels=64)
+
+        # Generate data loaders
+        train_loader = DataLoader(
+            train_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True)
+        valid_loader = DataLoader(
+            valid_dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True)
+
+        # Create model, optimizer, and loss function
+        model = GCN(hidden_channels=128)
         model.to(DEVICE)
         optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
         criterion = torch.nn.CrossEntropyLoss()
@@ -345,23 +343,27 @@ if __name__ == '__main__':
         best_acc_valid = 0
         best_model = None
 
-        for epoch in range(0, 13):
+        # Start training loop
+        for epoch in range(0, EPOCHS):
             print(f'Epoch: {epoch:03d}')
             train(model, criterion, optimizer, train_loader)
+
+            # Validate every 3 epochs
             if epoch % 3 == 0:
                 # train_acc = evaluate(model, train_loader, "train")
                 test_acc = evaluate(model, valid_loader, "test")
                 print('test_acc:', test_acc)
-                
+
+                # Save best valid accuracy and model
                 if test_acc > best_acc_valid:
                     best_acc_valid = test_acc
                     best_model = model
                     test_acc_list.append(test_acc)
 
-                
                 # print(
                 #     f'Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}\n################################################')
-    
-    print('Mean ACC on Valid =', sum(test_acc_list) / len(test_acc_list))
+        # Save best model
+        torch.save(best_model.state_dict(
+        ), "/content/drive/MyDrive/EECE 571F Project/GCNConv_fold"+str(fold_i)+"_best_patch_model.pt")
 
-   
+    print('Mean ACC on Valid =', sum(test_acc_list) / len(test_acc_list))
