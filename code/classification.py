@@ -306,7 +306,6 @@ if __name__ == '__main__':
                 #     f'Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}\n################################################')
 
         # Save best model
-        torch.save(best_model.state_dict(),
-                   "/content/drive/MyDrive/EECE 571F Project/fold"+str(fold_i)+"_best_patch_model.pt")
+        torch.save(best_model.state_dict(),"fold"+str(fold_i)+"_best_model.pt")
 
     print('Mean ACC on Valid =', sum(test_acc_list) / len(test_acc_list))
