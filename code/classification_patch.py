@@ -72,67 +72,67 @@ class MyOwnDataset(Dataset):
     def processed_file_names(self):
         return [f'data_{idx}.pt' for idx in range(self.size)]
 
-    ### Comment below part if you have processed dataset
-    def process(self):
+    # ### Comment below part if you have processed dataset
+    # def process(self):
 
-        # Create a regex pattern for files with .pt extension
-        pt_pattern = re.compile(r".*\.pt$")
+    #     # Create a regex pattern for files with .pt extension
+    #     pt_pattern = re.compile(r".*\.pt$")
 
-        # Create a list to store file paths
-        pt_file_paths = []
+    #     # Create a list to store file paths
+    #     pt_file_paths = []
 
-        # Use os.walk to traverse the directory recursively
-        for root, dirs, files in os.walk(self.root):
-            for file in files:
-                # Check if the file matches the regex pattern
-                if pt_pattern.match(file):
-                    # Get the full path of the file and append it to the list
-                    file_path = os.path.join(root, file)
-                    pt_file_paths.append(file_path)
+    #     # Use os.walk to traverse the directory recursively
+    #     for root, dirs, files in os.walk(self.root):
+    #         for file in files:
+    #             # Check if the file matches the regex pattern
+    #             if pt_pattern.match(file):
+    #                 # Get the full path of the file and append it to the list
+    #                 file_path = os.path.join(root, file)
+    #                 pt_file_paths.append(file_path)
 
-        idx = 0
-        temp = []
-        prev_slide_name = pt_file_paths[0].split("/")[-2]
-        for raw_path in tqdm(pt_file_paths):
-            adj_path = raw_path
+    #     idx = 0
+    #     temp = []
+    #     prev_slide_name = pt_file_paths[0].split("/")[-2]
+    #     for raw_path in tqdm(pt_file_paths):
+    #         adj_path = raw_path
 
-            cls = raw_path.split("/")[-3]
-            feature_path = raw_path.replace("output_graph", "output_cell_features").replace(
-                cls+'/'+cls, cls+'/'+cls+'/'+cls)
-            patch_name = feature_path.split("/")[-1].split('.')[0]
-            slide_name = feature_path.split("/")[-2]
-            feature_path = "/".join(feature_path.split("/")
-                                    [:-1]) + '/raw/' + patch_name + '-features.pt'
+    #         cls = raw_path.split("/")[-3]
+    #         feature_path = raw_path.replace("output_graph", "output_cell_features").replace(
+    #             cls+'/'+cls, cls+'/'+cls+'/'+cls)
+    #         patch_name = feature_path.split("/")[-1].split('.')[0]
+    #         slide_name = feature_path.split("/")[-2]
+    #         feature_path = "/".join(feature_path.split("/")
+    #                                 [:-1]) + '/raw/' + patch_name + '-features.pt'
 
-            if not os.path.exists(feature_path):
-                continue
+    #         if not os.path.exists(feature_path):
+    #             continue
 
-            adj = torch.load(raw_path)
-            # adj = torch.load(raw_path).to_sparse(layout=torch.sparse_coo)
-            # # more efficient way to do this???????????
-            # adj = sparse.to_edge_index(adj)
-            if len(adj) == 0:
-                continue
-            edge_index = adj.T  # adj.indices()
-            x = torch.Tensor(torch.load(feature_path))
-            # print(x)
-            y = self.classes_dict[cls]
-            data = Data(x=x, edge_index=edge_index, y=y)
+    #         adj = torch.load(raw_path)
+    #         # adj = torch.load(raw_path).to_sparse(layout=torch.sparse_coo)
+    #         # # more efficient way to do this???????????
+    #         # adj = sparse.to_edge_index(adj)
+    #         if len(adj) == 0:
+    #             continue
+    #         edge_index = adj.T  # adj.indices()
+    #         x = torch.Tensor(torch.load(feature_path))
+    #         # print(x)
+    #         y = self.classes_dict[cls]
+    #         data = Data(x=x, edge_index=edge_index, y=y)
 
-            if self.pre_filter is not None and not self.pre_filter(data):
-                continue
+    #         if self.pre_filter is not None and not self.pre_filter(data):
+    #             continue
 
-            if self.pre_transform is not None:
-                data = self.pre_transform(data)
+    #         if self.pre_transform is not None:
+    #             data = self.pre_transform(data)
 
-            if prev_slide_name != slide_name:
-                new_data, _, _ = collate.collate(Data, temp)
-                torch.save(new_data, osp.join(self.processed_dir, f'data_{idx}.pt'))
-                idx += 1
-                temp = []
-                prev_slide_name = slide_name
+    #         if prev_slide_name != slide_name:
+    #             new_data, _, _ = collate.collate(Data, temp)
+    #             torch.save(new_data, osp.join(self.processed_dir, f'data_{idx}.pt'))
+    #             idx += 1
+    #             temp = []
+    #             prev_slide_name = slide_name
 
-            temp.append(data)
+    #         temp.append(data)
 
     def len(self):
         return int(len(os.listdir(self.processed_dir)))
@@ -142,6 +142,8 @@ class MyOwnDataset(Dataset):
         slide_name = file_name.split('_')[0]
         data = torch.load(osp.join(self.processed_dir, file_name))
         data = self.transform(data)
+        data.slide_name = slide_name
+
         return data
 
 
@@ -150,7 +152,7 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
         self.conv1 = GATv2Conv(dataset.num_node_features, hidden_channels)
         self.conv2 = GATv2Conv(hidden_channels, hidden_channels)
-        self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
+        # self.conv3 = GATv2Conv(hidden_channels, hidden_channels)
         self.lin = Linear(hidden_channels, dataset.num_classes)
         self.layer_norm = LayerNorm(hidden_channels)
 
@@ -160,9 +162,9 @@ class GCN(torch.nn.Module):
         x = x.relu()
         x = self.layer_norm(x)
         x = self.conv2(x, edge_index)
-        x = x.relu()
-        x = self.layer_norm(x)
-        x = self.conv3(x, edge_index)
+        # x = x.relu()
+        # x = self.layer_norm(x)
+        # x = self.conv3(x, edge_index)
 
         # 2. Readout layer
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
@@ -177,18 +179,18 @@ class GCN(torch.nn.Module):
 metrics = {}
 def create_metrics(num_classes):
     metrics['valid_accuracy'] = Accuracy(
-        task="multiclass", num_classes=num_classes).to(DEVICE)
+        task="multiclass", num_classes=num_classes)
     metrics['valid_average_accuracy'] = Accuracy(
-        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+        task="multiclass", num_classes=num_classes, average='macro')
     metrics['valid_precision'] = Precision(
-        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+        task="multiclass", num_classes=num_classes, average='macro')
     metrics['valid_recall'] = Recall(
-        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+        task="multiclass", num_classes=num_classes, average='macro')
     metrics['valid_f1'] = F1Score(
-        task="multiclass", num_classes=num_classes, average='macro').to(DEVICE)
+        task="multiclass", num_classes=num_classes, average='macro')
     metrics['confusion_matrix'] = ConfusionMatrix(
-        task="multiclass", num_classes=num_classes).to(DEVICE)
-    metrics['valid_auc'] = AUROC(task="multiclass", num_classes=num_classes)
+        task="multiclass", num_classes=num_classes)
+    # metrics['valid_auc'] = AUROC(task="multiclass", num_classes=num_classes)
 
 
 def update_metrics(true, pred, pred_p):
@@ -206,9 +208,11 @@ def compute_metrics():
     print('* valid precision =', metrics['valid_precision'].compute().item())
     print('* valid recall =', metrics['valid_recall'].compute().item())
     print('* valid f1 =', metrics['valid_f1'].compute().item())
-    print('* valid auc =', metrics['valid_auc'].compute().item())
+    # print('* valid auc =', metrics['valid_auc'].compute().item())
     print('* confusion matrix =', metrics['confusion_matrix'].compute())
     print('\n\n')
+    
+    return metrics['valid_average_accuracy'].compute().item()
 
 
 def train(model, criterion, optimizer, train_loader):
@@ -247,6 +251,48 @@ def evaluate(model, loader, mode='train'):
 
     # Derive ratio of correct predictions.
     return correct / len(loader.dataset)
+
+
+def majority_voting_evaluate(model, loader, num_classes=4):
+    # Lists to store predictions and slide names
+    pred_list = []
+    slide_name_list = []
+
+    # Create metrics and move model to device
+    create_metrics(num_classes=4)
+    model.to(DEVICE)
+
+    # Iterate over the loader in batches
+    for data in tqdm(loader):
+        data = data.to(DEVICE)
+        out = model(data.x, data.edge_index, data.batch)
+        pred = out.argmax(dim=1)
+        
+        # Append predictions and slide names to the lists
+        pred_list += list(pred.cpu().detach().numpy())
+        slide_name_list += list(data.slide_name)
+
+    # Create a dictionary to store predictions for each slide
+    result_dict = defaultdict(list)
+    for slide_name, pred in zip(slide_name_list, pred_list):
+        result_dict[slide_name].append(pred)
+
+    # Calculate the majority votes for each slide
+    slide_major_votes = {slide_name: int(round(sum(votes) / len(votes))) for slide_name, votes in result_dict.items()}
+
+    # Prepare true and predicted labels for the slides
+    classes_dict = {"HP": 0, "NCM": 1, "SSL": 2, "TA": 3}
+    slide_true_list = [classes_dict[slide_name.split('-')[0]] for slide_name in slide_major_votes.keys()]
+    slide_pred_list = list(slide_major_votes.values())
+
+    # Convert lists to tensors
+    slide_true_tensor = torch.tensor(slide_true_list)
+    slide_pred_tensor = torch.tensor(slide_pred_list)
+
+    # Update and compute metrics
+    update_metrics(slide_true_tensor, slide_pred_tensor, None)
+    average_accuracy = compute_metrics()
+    return average_accuracy
 
 
 def prepare_splits(dataset):
@@ -291,8 +337,8 @@ def prepare_splits(dataset):
 
 if __name__ == '__main__':
     # set manuel random seed
-    random.seed(0)
-    torch.manual_seed(0)
+    random.seed(42)
+    torch.manual_seed(42)
 
     # Get arguments
     args = get_args()
@@ -346,19 +392,15 @@ if __name__ == '__main__':
             # Validate every 3 epochs
             if epoch % 3 == 0:
                 # train_acc = evaluate(model, train_loader, "train")
-                test_acc = evaluate(model, valid_loader, "test")
-                print('test_acc:', test_acc)
+                average_accuracy = majority_voting_evaluate(model, valid_loader, "test")
 
                 # Save best valid accuracy and model
-                if test_acc > best_acc_valid:
-                    best_acc_valid = test_acc
+                if average_accuracy > best_acc_valid:
+                    best_acc_valid = average_accuracy
                     best_model = model
-                    test_acc_list.append(test_acc)
+                    test_acc_list.append(average_accuracy)
 
-                # print(
-                #     f'Train Acc: {train_acc:.4f}, Test Acc: {test_acc:.4f}\n################################################')
         # Save best model
-        torch.save(best_model.state_dict(
-        ), "/content/drive/MyDrive/EECE 571F Project/GCNConv_fold"+str(fold_i)+"_best_patch_model.pt")
+        torch.save(best_model.state_dict(),"fold"+str(fold_i)+"_model.pt")
 
     print('Mean ACC on Valid =', sum(test_acc_list) / len(test_acc_list))
