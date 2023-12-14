@@ -13,26 +13,60 @@ The code has several steps to do classification on Whole Slide Images (WSI). The
 
 ## Run
 First of all clone the repository:
-```
+
+``` bash
 git clone https://github.com/alibalapour/EECE-571F-Project.git
 ```
 
 In the next step, install requirements by running this command:
-```
+
+``` bash
 pip install -r EECE-571F-Project/requirements.txt
 ```
 
-## Run HoverNet
-Once you have the project set up and the requirements installed, you can use HoverNet for nucleus detection. Follow these steps:
+## Steps
+### Run HoverNet
+Once you have the project set up and the requirements installed, you can use HoverNet for nucleus detection. Run these commands:
 
-### 1. Prepare Your Data:
-Make sure your images are located in a directory, which we will refer to as `$img_dir`. You should also specify an output directory, which we will refer to as `$output_dir`.
-
-### 2. Run the HoverNet Script:
-Run the HoverNet script by executing the following command. This script will extract nuclei from your images and save the results in the specified output directory.
-```
-chmod +x EECE-571F-Project/code/extract_nuclei.sh
-EECE-571F-Project/code/extract_nuclei.sh '$img_dir' '$output_dir'
+``` bash
+code/scripts/extract_nuclei_[CLS].sh '[image directory]' '[output directory]'
 ```
 
+Note that you need to select CLS from 'HP', 'SSL', 'TA', and 'NCM'.
 
+
+### Run Extract Cell Images bash
+To extract cell images, for each class (CLS) run below command:
+
+``` bash
+code/scripts/extract_cells_[CLS].sh
+```
+
+*Note:* You need to set the input and output path inside the bash.
+
+
+### Run Extract Features of each Images cell
+To extract features of cells in a patch based on each class (CLS) run this command:
+
+``` bash
+code/scripts/extract_cell_features_[CLS].sh
+```
+
+*Note:* You need to set the input and output path inside the bash.
+
+### Run Extract Graph
+To extract graphs of each patch, run this command:
+
+``` bash
+code/scripts/extract_graph_[CLS].sh
+```
+
+*Note:* You need to set the input and output path inside the bash.
+
+
+### Run Classification 
+To train and test a GNN-based model on the generated graphs and features, run below command:
+
+``` bash
+python 'code/classification.py' --graph_pairs_path=[path_to_graph_pairs] --features_dir_path=[path_to_features]
+```

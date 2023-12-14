@@ -68,67 +68,67 @@ class MyOwnDataset(Dataset):
     def processed_file_names(self):
         return [f'data_{idx}.pt' for idx in range(self.size)]
 
-    # Comment below part if you have processed dataset
-    # def process(self):
+    ### Comment below part if you have processed dataset
+    def process(self):
 
-    #     # Create a regex pattern for files with .pt extension
-    #     pt_pattern = re.compile(r".*\.pt$")
+        # Create a regex pattern for files with .pt extension
+        pt_pattern = re.compile(r".*\.pt$")
 
-    #     # Create a list to store file paths
-    #     pt_file_paths = []
+        # Create a list to store file paths
+        pt_file_paths = []
 
-    #     # Use os.walk to traverse the directory recursively
-    #     for root, dirs, files in os.walk(self.root):
-    #         for file in files:
-    #             # Check if the file matches the regex pattern
-    #             if pt_pattern.match(file):
-    #                 # Get the full path of the file and append it to the list
-    #                 file_path = os.path.join(root, file)
-    #                 pt_file_paths.append(file_path)
+        # Use os.walk to traverse the directory recursively
+        for root, dirs, files in os.walk(self.root):
+            for file in files:
+                # Check if the file matches the regex pattern
+                if pt_pattern.match(file):
+                    # Get the full path of the file and append it to the list
+                    file_path = os.path.join(root, file)
+                    pt_file_paths.append(file_path)
 
-    #     idx = 0
-    #     temp = []
-    #     prev_slide_name = pt_file_paths[0].split("/")[-2]
-    #     for raw_path in tqdm(pt_file_paths):
-    #         adj_path = raw_path
+        idx = 0
+        temp = []
+        prev_slide_name = pt_file_paths[0].split("/")[-2]
+        for raw_path in tqdm(pt_file_paths):
+            adj_path = raw_path
 
-    #         cls = raw_path.split("/")[-3]
-    #         feature_path = raw_path.replace("output_graph", "output_cell_features").replace(
-    #             cls+'/'+cls, cls+'/'+cls+'/'+cls)
-    #         patch_name = feature_path.split("/")[-1].split('.')[0]
-    #         slide_name = feature_path.split("/")[-2]
-    #         feature_path = "/".join(feature_path.split("/")
-    #                                 [:-1]) + '/raw/' + patch_name + '-features.pt'
+            cls = raw_path.split("/")[-3]
+            feature_path = raw_path.replace("output_graph", "output_cell_features").replace(
+                cls+'/'+cls, cls+'/'+cls+'/'+cls)
+            patch_name = feature_path.split("/")[-1].split('.')[0]
+            slide_name = feature_path.split("/")[-2]
+            feature_path = "/".join(feature_path.split("/")
+                                    [:-1]) + '/raw/' + patch_name + '-features.pt'
 
-    #         if not os.path.exists(feature_path):
-    #             continue
+            if not os.path.exists(feature_path):
+                continue
 
-    #         adj = torch.load(raw_path)
-    #         # adj = torch.load(raw_path).to_sparse(layout=torch.sparse_coo)
-    #         # # more efficient way to do this???????????
-    #         # adj = sparse.to_edge_index(adj)
-    #         if len(adj) == 0:
-    #             continue
-    #         edge_index = adj.T  # adj.indices()
-    #         x = torch.Tensor(torch.load(feature_path))
-    #         # print(x)
-    #         y = self.classes_dict[cls]
-    #         data = Data(x=x, edge_index=edge_index, y=y)
+            adj = torch.load(raw_path)
+            # adj = torch.load(raw_path).to_sparse(layout=torch.sparse_coo)
+            # # more efficient way to do this???????????
+            # adj = sparse.to_edge_index(adj)
+            if len(adj) == 0:
+                continue
+            edge_index = adj.T  # adj.indices()
+            x = torch.Tensor(torch.load(feature_path))
+            # print(x)
+            y = self.classes_dict[cls]
+            data = Data(x=x, edge_index=edge_index, y=y)
 
-    #         if self.pre_filter is not None and not self.pre_filter(data):
-    #             continue
+            if self.pre_filter is not None and not self.pre_filter(data):
+                continue
 
-    #         if self.pre_transform is not None:
-    #             data = self.pre_transform(data)
+            if self.pre_transform is not None:
+                data = self.pre_transform(data)
 
-    #         if prev_slide_name != slide_name:
-    #             new_data, _, _ = collate.collate(Data, temp)
-    #             torch.save(new_data, osp.join(self.processed_dir, f'data_{idx}.pt'))
-    #             idx += 1
-    #             temp = []
-    #             prev_slide_name = slide_name
+            if prev_slide_name != slide_name:
+                new_data, _, _ = collate.collate(Data, temp)
+                torch.save(new_data, osp.join(self.processed_dir, f'data_{idx}.pt'))
+                idx += 1
+                temp = []
+                prev_slide_name = slide_name
 
-    #         temp.append(data)
+            temp.append(data)
 
     def len(self):
         return int(len(os.listdir(self.processed_dir)))
