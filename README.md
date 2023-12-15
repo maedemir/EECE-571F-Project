@@ -2,7 +2,7 @@
 
 # Introduction
 In this project, our goal is to represent Gigantic Whole Slide Images (WSI) of colon polyp tissues as graphs and apply graph neural networks for subtype classification.
-![](Pipeline.pdf)
+![](Pipeline.png)
 
 
 # Getting Started
