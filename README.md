@@ -1,6 +1,8 @@
 # EECE-571F-Project
 
 # Introduction
+In this project, our goal is to represent Gigantic Whole Slide Images (WSI) of colon polyp tissues as graphs and apply graph neural networks for subtype classification.
+
 
 # Getting Started
 The code has several steps to do classification on Whole Slide Images (WSI). The steps are:
