@@ -1,5 +1,5 @@
-# EECE-571F-Project
-## Project Report
+
+# Project Report
 [Final Report.pdf](https://github.com/maedemir/EECE-571F-Project/files/13994767/Final.Report.pdf)
 
 
