@@ -1,4 +1,7 @@
 # EECE-571F-Project
+## Project Report
+[Final Report.pdf](https://github.com/maedemir/EECE-571F-Project/files/13994767/Final.Report.pdf)
+
 
 # Introduction
 In this project, our goal is to represent Gigantic Whole Slide Images (WSI) of colon polyp tissues as graphs and apply graph neural networks for subtype classification.
@@ -74,7 +77,6 @@ To train and test a GNN-based model on the generated graphs and features, run be
 python 'code/classification.py' --graph_pairs_path=[path_to_graph_pairs] --features_dir_path=[path_to_features]
 ```
 
-##Project Final Report
-[Final Report.pdf](https://github.com/maedemir/EECE-571F-Project/files/13994767/Final.Report.pdf)
+
 
 
